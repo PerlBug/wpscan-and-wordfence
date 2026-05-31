@@ -15,12 +15,13 @@
  |
  | [!] 1 vulnerability identified:
  |
- | [!] Title: Dignitas 1.1.9 - Privilage Escalation
- |     UUID: 7825c1da-3750-4e63-8af9-929e773bbe57
+ | [!] Title: Dignitas Theme <= 6.3.9 - Local File Inclusion
+ |     UUID: b099c1da-3750-4e63-8af9-929e773bbe62
+ |     CVSS: 7.5 (CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N)
+ |     Fixed in: 6.3.10
  |     References:
- |      - https://wpscan.com/vulnerability/7825c1da-3750-4e63-8af9-929e773bbe57
- |      - http://research.evex.pw/?vuln=6
- |      - https://packetstormsecurity.com/files/130652/
+ |      - https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2021-0001
+ |      - https://www.wordfence.com/threat-intel/vulnerabilities/id/b099c1da-3750-4e63-8af9-929e773bbe62
  |
  | The version could not be determined.
 

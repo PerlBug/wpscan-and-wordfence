@@ -6,7 +6,7 @@
 # on the integration test suite.
 #
 # Usage (local), after setup_wp_test_env.sh has prepared the site:
-#   export WPSCAN_API_TOKEN=...
+#   export WORDFENCE_CACHE_PATH=/path/to/wordfence_cache.json
 #   bash spec/integration/run_scan.sh
 #
 # Run from the wpscan repo root. The scan output is written to ./scan-results.json
@@ -19,12 +19,12 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 TARGET_URL="${TARGET_URL:-https://wordpress-test.ddev.site}"
 OUTPUT_FILE="${OUTPUT_FILE:-scan-results.json}"
 
-if [ -z "${WPSCAN_API_TOKEN:-}" ]; then
-  echo "Error: WPSCAN_API_TOKEN is not set. Get a token at https://wpscan.com/profile"
+if [ -z "${WORDFENCE_CACHE_PATH:-}" ]; then
+  echo "Error: WORDFENCE_CACHE_PATH is not set. Point it at a Wordfence Intelligence JSON export."
   exit 1
 fi
 
-# Update the local vulnerability DB so the scan has fresh data
+# Update the local detection DB (fingerprints/finders/wordlists) so the scan has fresh data
 bundle exec ruby -I"${REPO_ROOT}/lib" "${REPO_ROOT}/bin/wpscan" --update
 
 # Run the scan. Exit code 5 means vulnerabilities were found, which is what we
@@ -37,7 +37,7 @@ bundle exec ruby -I"${REPO_ROOT}/lib" "${REPO_ROOT}/bin/wpscan" \
   --clear-cache \
   --format json \
   --output "${OUTPUT_FILE}" \
-  --api-token "${WPSCAN_API_TOKEN}" \
+  --wordfence-db "${WORDFENCE_CACHE_PATH}" \
   -e vp,vt,u,cb,dbe,tt \
   --plugins-detection passive \
   --themes-detection passive

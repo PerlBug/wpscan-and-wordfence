@@ -32,18 +32,19 @@
     },
     "vulnerabilities": [
       {
-        "title": "Dignitas 1.1.9 - Privilage Escalation",
-        "uuid": "7825c1da-3750-4e63-8af9-929e773bbe57",
-        "fixed_in": null,
+        "title": "Dignitas Theme <= 6.3.9 - Local File Inclusion",
+        "uuid": "b099c1da-3750-4e63-8af9-929e773bbe62",
+        "cvss": {
+          "score": "7.5",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"
+        },
+        "fixed_in": "6.3.10",
         "references": {
+          "cve": [
+            "2021-0001"
+          ],
           "url": [
-            "http://research.evex.pw/?vuln=6"
-          ],
-          "packetstorm": [
-            "130652"
-          ],
-          "wpvulndb": [
-            "7825c1da-3750-4e63-8af9-929e773bbe57"
+            "https://www.wordfence.com/threat-intel/vulnerabilities/id/b099c1da-3750-4e63-8af9-929e773bbe62"
           ]
         }
       }

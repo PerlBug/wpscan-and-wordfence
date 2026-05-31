@@ -42,10 +42,6 @@ def df_stubbed_response(fixture, finder_super_class)
   end
 end
 
-def vuln_api_data_for(path)
-  JSON.parse(File.read(FIXTURES.join('db', 'vuln_api', "#{path}.json")))
-end
-
 def count_files_in_dir(absolute_dir_path, files_pattern = '*')
   Dir.glob(File.join(absolute_dir_path, files_pattern)).count
 end
@@ -120,3 +116,16 @@ APP_VIEWS                = File.join(WPScan::APP_DIR, 'views')
 ERROR_404_URL_PATTERN    = %r{/[a-z\d]{7}\.html$}
 
 redefine_constant(:DB_DIR, FIXTURES.join('db'))
+
+# Local Wordfence vulnerability database used by the test suite. Every example
+# starts with a valid path and a fresh (unbuilt) index so cached state never
+# leaks between examples; specs that exercise vulnerability matching either rely
+# on this fixture or stub WPScan::DB::Wordfence.vulnerabilities directly.
+WORDFENCE_FIXTURE = FIXTURES.join('wordfence_cache.json')
+
+RSpec.configure do |config|
+  config.before do
+    WPScan::DB::Wordfence.reset!
+    WPScan::DB::Wordfence.path = WORDFENCE_FIXTURE.to_s
+  end
+end

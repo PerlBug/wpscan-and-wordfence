@@ -9,7 +9,6 @@ describe 'App::Views' do
   # in the expected output.
   %i[JSON CliNoColour].each do |formatter|
     context "when #{formatter}" do
-      it_behaves_like 'App::Views::VulnApi'
       it_behaves_like 'App::Views::WpVersion'
       it_behaves_like 'App::Views::MainTheme'
       it_behaves_like 'App::Views::Enumeration'
@@ -18,8 +17,11 @@ describe 'App::Views' do
 
       before do
         WPScan::ParsedCli.options = parsed_options
-        # Resets the formatter to ensure the correct one is loaded
-        controller.class.class_variable_set(:@@formatter, nil)
+        # Resets the shared formatter (a Controller::Base class variable) so the
+        # one matching this example's --format is loaded. Reset on Base rather
+        # than the subclass to avoid defining @@formatter on a subclass (which
+        # Ruby then flags as "overtaken by Base").
+        WPScan::Controller::Base.reset
         # Stub tty? to return false for consistent output across environments
         allow($stdout).to receive(:tty?).and_return(false)
       end

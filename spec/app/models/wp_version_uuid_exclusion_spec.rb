@@ -17,12 +17,16 @@ describe 'UUID Exclusion for WP Version' do
     subject(:wp_version) { WPScan::Model::WpVersion.new('3.8.1', opts) }
     let(:opts) { {} }
 
-    let(:vuln_data) do
-      vuln_api_data_for('wordpresses/381')
+    let(:vulns) do
+      [
+        WPScan::Vulnerability.new('WP 3.8.1 - Vuln 1', uuid: 'c099c1da-3750-4e63-8af9-929e773bbe57'),
+        WPScan::Vulnerability.new('WP 3.8.1 - Vuln 2', uuid: 'd099c1da-3750-4e63-8af9-929e773bbe58')
+      ]
     end
 
     before do
-      allow(wp_version).to receive(:db_data).and_return(vuln_data)
+      allow(WPScan::DB::Wordfence).to receive(:vulnerabilities)
+        .with(type: 'core', slug: 'wordpress', version: '3.8.1').and_return(vulns)
     end
 
     context 'without exclusions' do

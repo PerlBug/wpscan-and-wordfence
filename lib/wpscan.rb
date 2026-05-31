@@ -25,7 +25,7 @@ require 'socket'
 require 'timeout'
 require 'xmlrpc/client'
 # Monkey Patches/Fixes
-require 'wpscan/typhoeus/response' # Adds Response#html and from_vuln_api?
+require 'wpscan/typhoeus/response' # Adds Response#html
 require 'wpscan/typhoeus/hydra'    # https://github.com/typhoeus/typhoeus/issues/439
 require 'wpscan/public_suffix/domain' # Adds Domain#match
 require 'wpscan/numeric' # Adds Numeric#bytes_to_human
@@ -91,8 +91,6 @@ module WPScan
     # Track HTTP status codes
     increment_status_code(response.code)
 
-    self.api_requests += 1 if response.respond_to?(:from_vuln_api?) && response.from_vuln_api?
-
     WPScan::Browser.instance.trottle!
   end
 
@@ -140,14 +138,6 @@ module WPScan
 
     def start_memory=(value)
       @@start_memory = value
-    end
-
-    def api_requests
-      @@api_requests ||= 0
-    end
-
-    def api_requests=(value)
-      @@api_requests = value
     end
 
     # Command line arguments used to start the scan

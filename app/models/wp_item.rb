@@ -12,7 +12,7 @@ module WPScan
       # Most common readme filenames, based on checking all public plugins and themes.
       READMES = %w[readme.txt README.txt README.md readme.md Readme.txt].freeze
 
-      attr_reader :uri, :slug, :detection_opts, :version_detection_opts, :blog, :path_from_blog, :db_data
+      attr_reader :uri, :slug, :detection_opts, :version_detection_opts, :blog, :path_from_blog
 
       delegate :homepage_res, :error_404_res, :xpath_pattern_from_page, :in_scope_uris, :head_or_get_params, to: :blog
 
@@ -33,31 +33,32 @@ module WPScan
         parse_finding_options(opts)
       end
 
-      # @return [ Array<Vulnerabily> ]
-      def vulnerabilities
-        return @vulnerabilities if @vulnerabilities
-
-        @vulnerabilities = []
-
-        Array(db_data['vulnerabilities']).each do |json_vuln|
-          vulnerability = Vulnerability.load_from_json(json_vuln)
-          @vulnerabilities << vulnerability if vulnerable_to?(vulnerability)
-        end
-
-        @vulnerabilities
+      # The Wordfence software type used to look up vulnerabilities.
+      #
+      # @return [ String ] 'plugin' or 'theme'
+      def wordfence_type
+        self.class.name.split('::').last.downcase
       end
 
-      # Checks if the wp_item is vulnerable to a specific vulnerability
+      # Vulnerabilities affecting this item, matched against the local Wordfence
+      # database for the detected version (all known vulns when the version is
+      # unknown).
       #
-      # @param [ Vulnerability ] vuln Vulnerability to check the item against
-      #
-      # @return [ Boolean ]
-      def vulnerable_to?(vuln)
-        return false if version && vuln&.introduced_in && version < vuln.introduced_in
+      # @return [ Array<Vulnerability> ]
+      def vulnerabilities
+        @vulnerabilities ||= DB::Wordfence.vulnerabilities(
+          type: wordfence_type,
+          slug: slug,
+          version: detected_version_number
+        )
+      end
 
-        return true unless version && vuln&.fixed_in && !vuln.fixed_in.empty?
+      # @return [ String, nil ] The detected version number, or nil when the
+      #   version is unknown (version finders return false in that case).
+      def detected_version_number
+        return nil unless (detected = version)
 
-        version < vuln.fixed_in
+        detected.to_s
       end
 
       # @return [ String ]

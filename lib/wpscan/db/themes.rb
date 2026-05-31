@@ -8,6 +8,12 @@ module WPScan
       def self.metadata
         Theme.metadata
       end
+
+      # @return [ Array<String> ] Slugs of all themes with a known vulnerability,
+      #   sourced from the local Wordfence database.
+      def self.vulnerable_slugs
+        Wordfence.slugs_for('theme')
+      end
     end
   end
 end

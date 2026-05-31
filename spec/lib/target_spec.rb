@@ -204,21 +204,23 @@ describe WPScan::Target do
 
     context 'when wp_version found' do
       before do
-        expect(wp_version)
-          .to receive(:db_data)
-          .and_return(vuln_api_data_for("wordpresses/#{wp_version.number.tr('.', '')}"))
+        allow(WPScan::DB::Wordfence).to receive(:vulnerabilities)
+          .with(type: 'core', slug: 'wordpress', version: wp_version.number)
+          .and_return(vulns)
 
         target.instance_variable_set(:@wp_version, wp_version)
       end
 
       context 'when not vulnerable' do
         let(:wp_version) { WPScan::Model::WpVersion.new('4.0') }
+        let(:vulns)      { [] }
 
         it { should_not be_vulnerable }
       end
 
       context 'when vulnerable' do
         let(:wp_version) { WPScan::Model::WpVersion.new('3.8.1') }
+        let(:vulns)      { [WPScan::Vulnerability.new('Core vuln', uuid: 'x')] }
 
         it { should be_vulnerable }
       end

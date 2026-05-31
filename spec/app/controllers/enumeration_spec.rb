@@ -81,45 +81,17 @@ describe WPScan::Controller::Enumeration do
     end
   end
 
+  # Vulnerable plugin/theme enumeration no longer requires an API token: the
+  # local Wordfence database (validated by Controller::Wordfence#before_scan) is
+  # the vulnerability source, so Enumeration#before_scan has no gating to do.
   describe '#before_scan' do
-    context 'when enumerating vulnerable plugins without API token' do
-      let(:cli_args) { "#{super()} -e vp" }
+    %w[vp vt p].each do |choice|
+      context "when -e #{choice}" do
+        let(:cli_args) { "#{super()} -e #{choice}" }
 
-      it 'raises ApiTokenRequiredForVulnerableEnumeration error' do
-        expect { controller.before_scan }.to raise_error(WPScan::Error::ApiTokenRequiredForVulnerableEnumeration)
-      end
-    end
-
-    context 'when enumerating vulnerable themes without API token' do
-      let(:cli_args) { "#{super()} -e vt" }
-
-      it 'raises ApiTokenRequiredForVulnerableEnumeration error' do
-        expect { controller.before_scan }.to raise_error(WPScan::Error::ApiTokenRequiredForVulnerableEnumeration)
-      end
-    end
-
-    context 'when enumerating vulnerable plugins with API token' do
-      let(:cli_args) { "#{super()} -e vp --api-token test-token" }
-
-      before do
-        # Simulate the VulnApi controller running before Enumeration
-        vuln_api_controller = WPScan::Controller::VulnApi.new
-        allow(WPScan::DB::VulnApi).to receive(:status).and_return({ 'plan' => 'free', 'requests_remaining' => 25 })
-        vuln_api_controller.before_scan
-      end
-
-      after { WPScan::DB::VulnApi.token = nil }
-
-      it 'does not raise an error' do
-        expect { controller.before_scan }.not_to raise_error
-      end
-    end
-
-    context 'when enumerating non-vulnerable plugins without API token' do
-      let(:cli_args) { "#{super()} -e p" }
-
-      it 'does not raise an error' do
-        expect { controller.before_scan }.not_to raise_error
+        it 'does not raise an error' do
+          expect { controller.before_scan }.not_to raise_error
+        end
       end
     end
   end
@@ -178,10 +150,7 @@ describe WPScan::Controller::Enumeration do
       end
 
       context 'with -e vp (vulnerable_plugins) it streams only vulnerable findings' do
-        let(:cli_args) { "#{super().sub('-e ap', '-e vp')} --api-token x" }
-
-        before { allow(WPScan::DB::VulnApi).to receive(:token).and_return('x') }
-        after { WPScan::DB::VulnApi.token = nil }
+        let(:cli_args) { super().sub('-e ap', '-e vp') }
 
         it 'skips non-vulnerable plugins in the streamed output' do
           expect(controller.formatter).to receive(:output).with('@info', anything, anything).once

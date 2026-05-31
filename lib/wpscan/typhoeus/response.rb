@@ -23,15 +23,5 @@ module Typhoeus
     def size
       (body.nil? ? 0 : body.size) + (response_headers.nil? ? 0 : response_headers.size)
     end
-
-    # @note Ignores requests done to the /status endpoint of the WPScan Vuln API.
-    #
-    # @return [ Boolean ]
-    def from_vuln_api?
-      return false unless effective_url
-
-      effective_url.start_with?(WPScan::DB::VulnApi.uri.to_s) &&
-        !effective_url.start_with?(WPScan::DB::VulnApi.uri.join('status').to_s)
-    end
   end
 end

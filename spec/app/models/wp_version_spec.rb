@@ -38,60 +38,29 @@ describe WPScan::Model::WpVersion do
     end
   end
 
+  # Core vulnerability matching now lives in WPScan::DB::Wordfence
+  # (see spec/lib/db/wordfence_spec.rb); WpVersion simply delegates to it.
   describe '#vulnerabilities' do
     subject(:version) { described_class.new(number) }
-    before { allow(version).to receive(:db_data).and_return(db_data) }
 
-    context 'when no vulns' do
-      let(:number) { '4.4' }
-      let(:db_data) { { 'vulnerabilities' => [] } }
+    let(:number) { '3.8.1' }
+    let(:vulns)  { [WPScan::Vulnerability.new('Core Vuln', uuid: 'x')] }
 
-      its(:vulnerabilities) { should be_empty }
+    it 'queries the Wordfence DB for core with the version number' do
+      expect(WPScan::DB::Wordfence).to receive(:vulnerabilities)
+        .with(type: 'core', slug: 'wordpress', version: number).and_return(vulns)
+
+      expect(version.vulnerabilities).to eq vulns
+      expect(version).to be_vulnerable
     end
 
-    context 'when vulnerable' do
-      after do
-        expect(version.vulnerabilities).to eq @expected
-        expect(version).to be_vulnerable
-      end
+    context 'when there are no vulnerabilities' do
+      it 'is not vulnerable' do
+        expect(WPScan::DB::Wordfence).to receive(:vulnerabilities)
+          .with(type: 'core', slug: 'wordpress', version: number).and_return([])
 
-      context 'when a signle vuln' do
-        let(:number) { '3.8' }
-        let(:db_data) { vuln_api_data_for('wordpresses/38') }
-
-        it 'returns the expected result' do
-          @expected = [WPScan::Vulnerability.new(
-            'WP 3.8 - Vuln 1',
-            references: { url: %w[url-4], wpvulndb: '3099c1da-3750-4e63-8af9-929e773bbe57' },
-            type: 'AUTHBYPASS',
-            uuid: '3099c1da-3750-4e63-8af9-929e773bbe57'
-          )]
-        end
-      end
-
-      context 'when multiple vulns' do
-        let(:number) { '3.8.1' }
-        let(:db_data) { vuln_api_data_for('wordpresses/381') }
-
-        it 'returns the expected results' do
-          @expected = [
-            WPScan::Vulnerability.new(
-              'WP 3.8.1 - Vuln 1',
-              references: { wpvulndb: 'c099c1da-3750-4e63-8af9-929e773bbe57' },
-              type: 'SQLI',
-              cvss: { score: '5.4', vector: 'VECTOR' },
-              poc: "# Sample exploit code\nprint('exploit')",
-              uuid: 'c099c1da-3750-4e63-8af9-929e773bbe57'
-            ),
-            WPScan::Vulnerability.new(
-              'WP 3.8.1 - Vuln 2',
-              references: { url: %w[url-2 url-3], cve: %w[2014-0166],
-                            wpvulndb: 'd099c1da-3750-4e63-8af9-929e773bbe58' },
-              fixed_in: '3.8.2',
-              uuid: 'd099c1da-3750-4e63-8af9-929e773bbe58'
-            )
-          ]
-        end
+        expect(version.vulnerabilities).to eq []
+        expect(version).to_not be_vulnerable
       end
     end
   end
@@ -99,27 +68,14 @@ describe WPScan::Model::WpVersion do
   describe '#metadata, #release_date, #status' do
     subject(:version) { described_class.new('3.8.1') }
 
-    before { allow(version).to receive(:db_data).and_return(db_data) }
+    its(:release_date) { should eql '2014-01-23' }
+    its(:status) { should eql 'outdated' }
 
-    context 'when no db_data' do
-      let(:db_data) { {} }
+    context 'when the version is not in the metadata' do
+      subject(:version) { described_class.new('3.8.2') }
 
-      its(:release_date) { should eql '2014-01-23' }
-      its(:status) { should eql 'outdated' }
-
-      context 'when the version is not in the metadata' do
-        subject(:version) { described_class.new('3.8.2') }
-
-        its(:release_date) { should eql 'Unknown' }
-        its(:status) { should eql 'Unknown' }
-      end
-    end
-
-    context 'when db_data' do
-      let(:db_data) { vuln_api_data_for('wordpresses/381') }
-
-      its(:release_date) { should eql '2014-01-23-via-api' }
-      its(:status) { should eql 'outdated-via-api' }
+      its(:release_date) { should eql 'Unknown' }
+      its(:status) { should eql 'Unknown' }
     end
   end
 end

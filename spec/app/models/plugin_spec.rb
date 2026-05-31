@@ -87,42 +87,26 @@ describe WPScan::Model::Plugin do
   end
 
   describe '#latest_version, #last_updated, #popular' do
-    before do
-      allow(plugin).to receive(:db_data).and_return(db_data)
-      allow(plugin).to receive(:wordpress_org_data).and_return({})
-    end
+    before { allow(plugin).to receive(:wordpress_org_data).and_return({}) }
 
-    context 'when no db_data and no metadata' do
-      let(:slug)    { 'not-known' }
-      let(:db_data) { {} }
+    context 'when no metadata' do
+      let(:slug) { 'not-known' }
 
       its(:latest_version) { should be_nil }
       its(:last_updated) { should be_nil }
       its(:popular?) { should be false }
     end
 
-    context 'when no db_data but metadata' do
+    context 'when metadata' do
       let(:slug) { 'no-vulns-popular' }
-      let(:db_data) { {} }
 
       its(:latest_version) { should eql WPScan::Model::Version.new('2.0') }
       its(:last_updated) { should eql '2015-05-16T00:00:00.000Z' }
       its(:popular?) { should be true }
     end
-
-    context 'when db_data' do
-      let(:slug) { 'no-vulns-popular' }
-      let(:db_data) { vuln_api_data_for('plugins/no-vulns-popular') }
-
-      its(:latest_version) { should eql WPScan::Model::Version.new('2.1') }
-      its(:last_updated) { should eql '2015-05-16T00:00:00.000Z-via-api' }
-      its(:popular?) { should be true }
-    end
   end
 
   describe '#outdated?' do
-    before { allow(plugin).to receive(:db_data).and_return({}) }
-
     context 'when last_version' do
       let(:slug) { 'no-vulns-popular' }
 
@@ -176,144 +160,34 @@ describe WPScan::Model::Plugin do
     end
   end
 
+  # The version-range matching logic now lives in WPScan::DB::Wordfence
+  # (see spec/lib/db/wordfence_spec.rb); the model simply delegates to it.
   describe '#vulnerabilities' do
-    before { allow(plugin).to receive(:db_data).and_return(db_data) }
+    let(:vulns) { [WPScan::Vulnerability.new('Some Plugin Vuln', uuid: 'x')] }
 
-    after do
-      expect(plugin.vulnerabilities).to eq @expected
-      expect(plugin.vulnerable?).to eql !@expected.empty?
-    end
+    before { allow(plugin).to receive(:version).and_return(version) }
 
-    context 'when plugin not in the DB' do
-      let(:slug)    { 'not-in-db' }
-      let(:db_data) { {} }
+    context 'when the plugin has a detected version' do
+      let(:version) { WPScan::Model::Version.new('1.2') }
 
-      it 'returns an empty array' do
-        @expected = []
+      it 'queries the Wordfence DB with that version and returns the result' do
+        expect(WPScan::DB::Wordfence).to receive(:vulnerabilities)
+          .with(type: 'plugin', slug: slug, version: '1.2').and_return(vulns)
+
+        expect(plugin.vulnerabilities).to eq vulns
+        expect(plugin).to be_vulnerable
       end
     end
 
-    context 'when in the DB' do
-      context 'when no vulnerabilities' do
-        let(:slug)    { 'no-vulns-popular' }
-        let(:db_data) { vuln_api_data_for('plugins/no-vulns-popular') }
+    context 'when the plugin version is unknown' do
+      let(:version) { false }
 
-        it 'returns an empty array' do
-          @expected = []
-        end
-      end
+      it 'queries the Wordfence DB with a nil version' do
+        expect(WPScan::DB::Wordfence).to receive(:vulnerabilities)
+          .with(type: 'plugin', slug: slug, version: nil).and_return([])
 
-      context 'when vulnerabilities' do
-        context 'when only fixed_in' do
-          let(:slug)    { 'vulnerable-not-popular' }
-          let(:db_data) { vuln_api_data_for('plugins/vulnerable-not-popular') }
-
-          let(:all_vulns) do
-            [
-              WPScan::Vulnerability.new(
-                'First Vuln <= 6.3.10 - LFI',
-                references: { wpvulndb: 'e099c1da-3750-4e63-8af9-929e773bbe59' },
-                type: 'LFI',
-                fixed_in: '6.3.10',
-                poc: "#!/bin/bash\ncurl 'http://example.com/?file=../../../etc/passwd'",
-                uuid: 'e099c1da-3750-4e63-8af9-929e773bbe59'
-              ),
-              WPScan::Vulnerability.new('No Fixed In',
-                                        references: { wpvulndb: 'f099c1da-3750-4e63-8af9-929e773bbe60' },
-                                        uuid: 'f099c1da-3750-4e63-8af9-929e773bbe60')
-            ]
-          end
-
-          context 'when no plugin version' do
-            before { expect(plugin).to receive(:version).at_least(1).and_return(false) }
-
-            it 'returns all the vulnerabilities' do
-              @expected = all_vulns
-            end
-          end
-
-          context 'when plugin version' do
-            before do
-              expect(plugin)
-                .to receive(:version)
-                .at_least(1)
-                .and_return(WPScan::Model::Version.new(number))
-            end
-
-            context 'when < to fixed_in' do
-              let(:number) { '5.0' }
-
-              it 'returns it' do
-                @expected = all_vulns
-              end
-            end
-
-            context 'when >= to fixed_in' do
-              let(:number) { '6.3.10' }
-
-              it 'does not return it ' do
-                @expected = [all_vulns.last]
-              end
-            end
-          end
-        end
-
-        context 'when introduced_in' do
-          let(:db_data) { vuln_api_data_for('plugins/vulnerable-introduced-in') }
-
-          let(:all_vulns) do
-            [
-              WPScan::Vulnerability.new(
-                'Introduced In 6.4',
-                fixed_in: '6.5',
-                introduced_in: '6.4',
-                references: { wpvulndb: 'a099c1da-3750-4e63-8af9-929e773bbe61' },
-                uuid: 'a099c1da-3750-4e63-8af9-929e773bbe61'
-              )
-            ]
-          end
-
-          context 'when no plugin version' do
-            before { expect(plugin).to receive(:version).at_least(1).and_return(false) }
-
-            it 'returns all the vulnerabilities' do
-              @expected = all_vulns
-            end
-          end
-
-          context 'when plugin version' do
-            before do
-              expect(plugin)
-                .to receive(:version)
-                .at_least(1)
-                .and_return(WPScan::Model::Version.new(number))
-            end
-
-            context 'when < to introduced_in' do
-              let(:number) { '5.0' }
-
-              it 'does not return it' do
-                @expected = []
-              end
-            end
-
-            context 'when >= to fixed_in' do
-              let(:number) { '6.5' }
-
-              it 'does not return it' do
-                @expected = []
-              end
-            end
-
-            context 'when >= to introduced_in' do
-              let(:number) { '6.4' }
-
-              it 'returns it' do
-                @expected = all_vulns
-              end
-            end
-          end
-        end
+        expect(plugin.vulnerabilities).to eq []
+        expect(plugin).to_not be_vulnerable
       end
     end
   end

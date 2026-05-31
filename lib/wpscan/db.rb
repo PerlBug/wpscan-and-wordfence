@@ -11,7 +11,7 @@ require_relative 'db/sponsor'
 require_relative 'db/wp_version'
 require_relative 'db/fingerprints'
 
-require_relative 'db/vuln_api'
+require_relative 'db/wordfence'
 
 require_relative 'db/dynamic_finders/base'
 require_relative 'db/dynamic_finders/plugin'

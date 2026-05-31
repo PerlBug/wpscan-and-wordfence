@@ -39,29 +39,15 @@ module WPScan
         @all_numbers.sort! { |a, b| Gem::Version.new(b) <=> Gem::Version.new(a) }
       end
 
-      # Retrieve the metadata from the vuln API if available (and a valid token is given),
-      # or the local metadata db otherwise
+      # Retrieve the metadata from the local detection database.
       # @return [ Hash ]
       def metadata
-        @metadata ||= db_data.empty? ? DB::Version.metadata_at(number) : db_data
-      end
-
-      # @return [ Hash ]
-      def db_data
-        @db_data ||= DB::VulnApi.wordpress_data(number)
+        @metadata ||= DB::Version.metadata_at(number)
       end
 
       # @return [ Array<Vulnerability> ]
       def vulnerabilities
-        return @vulnerabilities if @vulnerabilities
-
-        @vulnerabilities = []
-
-        Array(db_data['vulnerabilities']).each do |json_vuln|
-          @vulnerabilities << Vulnerability.load_from_json(json_vuln)
-        end
-
-        @vulnerabilities
+        @vulnerabilities ||= DB::Wordfence.vulnerabilities(type: 'core', slug: 'wordpress', version: number)
       end
 
       # @return [ String ]

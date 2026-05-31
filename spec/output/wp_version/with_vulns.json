@@ -1,8 +1,8 @@
 {
   "version": {
     "number": "3.8.1",
-    "release_date": "2014-01-23-via-api",
-    "status": "outdated-via-api",
+    "release_date": "2014-01-23",
+    "status": "outdated",
     "found_by": "rspec",
     "confidence": 0,
     "interesting_entries": [
@@ -17,13 +17,12 @@
         "uuid": "c099c1da-3750-4e63-8af9-929e773bbe57",
         "cvss": {
           "score": "5.4",
-          "vector": "VECTOR"
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N"
         },
-        "fixed_in": null,
-        "poc": "# Sample exploit code\nprint('exploit')",
+        "fixed_in": "3.8.2",
         "references": {
-          "wpvulndb": [
-            "c099c1da-3750-4e63-8af9-929e773bbe57"
+          "url": [
+            "https://www.wordfence.com/threat-intel/vulnerabilities/id/c099c1da-3750-4e63-8af9-929e773bbe57"
           ]
         }
       },
@@ -36,11 +35,7 @@
             "2014-0166"
           ],
           "url": [
-            "url-2",
-            "url-3"
-          ],
-          "wpvulndb": [
-            "d099c1da-3750-4e63-8af9-929e773bbe58"
+            "https://example.com/advisory-2"
           ]
         }
       }

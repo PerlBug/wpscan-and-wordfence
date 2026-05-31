@@ -11,6 +11,8 @@ describe WPScan::DB::Plugins do
     its(:popular_slugs) { should eql %w[no-vulns-popular] }
   end
 
+  # vulnerable_slugs is now sourced from the local Wordfence database
+  # (spec/fixtures/wordfence_cache.json), not the metadata.json popularity DB.
   describe '#vulnerable_slugs' do
     its(:vulnerable_slugs) { should eql %w[vulnerable-not-popular] }
   end

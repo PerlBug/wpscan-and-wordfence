@@ -4,13 +4,13 @@
   </a>
 </p>
 
-<h3 align="center">WPScan</h3>
+<h3 align="center">WPScan + Wordfence</h3>
 
 <p align="center">
-  WordPress Security Scanner
+  WordPress Security Scanner with offline, Wordfence-powered vulnerability data
   <br>
   <br>
-  <a href="https://wpscan.com/" title="homepage" target="_blank">WPScan WordPress Vulnerability Database</a> - <a href="https://wordpress.org/plugins/wpscan/" title="wordpress security plugin" target="_blank">WordPress Security Plugin</a>
+  A fork of <a href="https://github.com/wpscanteam/wpscan" target="_blank">WPScan</a> that matches vulnerabilities against a local <a href="https://www.wordfence.com/threat-intel/" target="_blank">Wordfence Intelligence</a> database — no WPScan API token required.
 </p>
 
 <p align="center">
@@ -20,6 +20,33 @@
   <a href="https://qlty.sh/gh/wpscanteam/projects/wpscan" target="_blank"><img src="https://qlty.sh/gh/wpscanteam/projects/wpscan/maintainability.svg" alt="Maintainability"></a>
   <a href="https://coveralls.io/github/wpscanteam/wpscan?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/wpscanteam/wpscan/badge.svg?branch=master" alt="Coverage Status"></a>
 </p>
+
+# What is this?
+
+This is a fork of the open-source [WPScan](https://github.com/wpscanteam/wpscan) WordPress security scanner, modified to get its **vulnerability data from a local [Wordfence Intelligence](https://www.wordfence.com/threat-intel/) JSON export instead of the paid WPScan API.**
+
+- ✅ **No WPScan API token and no 25-requests/day limit** — vulnerability matching runs fully offline.
+- ✅ WordPress core, plugin and theme vulnerabilities are matched against the Wordfence database you provide.
+- ✅ Everything else WPScan does (version/plugin/theme/user enumeration, interesting findings, password attacks) is unchanged.
+
+WPScan still uses its own local **detection** database (version fingerprints, dynamic finders, wordlists) to *find* the WordPress version, plugins and themes — that part is kept and refreshed with `wpscan --update`. Wordfence only supplies the *vulnerability* data.
+
+# Quick start
+
+1. Obtain a Wordfence Intelligence vulnerability export (a single JSON file, ~140 MB) and save it somewhere, e.g. `~/wordfence_cache.json`.
+
+2. Point WPScan at it with an environment variable **or** the `--wordfence-db` flag, then scan:
+
+```shell
+# Option A: environment variable
+export WORDFENCE_CACHE_PATH=~/wordfence_cache.json
+wpscan --url https://target.tld/ --enumerate vp,vt
+
+# Option B: CLI flag (takes precedence over the env var)
+wpscan --url https://target.tld/ --wordfence-db ~/wordfence_cache.json --enumerate vp,vt
+```
+
+If neither the env var nor the flag is set (or the file cannot be read), WPScan aborts with a clear error before scanning. See [Vulnerability data (Wordfence Intelligence)](#vulnerability-data-wordfence-intelligence) for details.
 
 # INSTALL
 
@@ -75,7 +102,7 @@ On MacOSX, if a ```Gem::FilePermissionError``` is raised due to Apple's System I
 
 # Updating
 
-You can update the local database by using ```wpscan --update```
+You can update the local **detection** database (version fingerprints, finders and wordlists) by using ```wpscan --update```. This database is only used to *detect* WordPress, plugins and themes; vulnerability data comes from the Wordfence JSON you provide (see [Vulnerability data (Wordfence Intelligence)](#vulnerability-data-wordfence-intelligence)).
 
 Updating WPScan itself is either done via ```gem update wpscan``` or the packages manager (this is quite important for distributions such as in Kali Linux: ```apt-get update && apt-get upgrade```) depending on how WPScan was (pre)installed
 
@@ -138,16 +165,16 @@ To migrate an existing installation to the XDG path:
 mv ~/.wpscan ~/.cache/wpscan
 ```
 
-## Optional: WordPress Vulnerability Database API
+## Vulnerability data (Wordfence Intelligence)
 
-The WPScan CLI tool uses the [WordPress Vulnerability Database API](https://wpscan.com/api) to retrieve WordPress vulnerability data in real-time. For WPScan to retrieve the vulnerability data an API token must be supplied via the `--api-token` option, or via a configuration file, as discussed below. An API token can be obtained by registering an account on [WPScan.com](https://wpscan.com/register).
+This fork matches vulnerabilities against a local [Wordfence Intelligence](https://www.wordfence.com/threat-intel/) JSON export instead of the WPScan API, so there is no API token and no per-day request limit.
 
-Up to **25** API requests per day are given free of charge, that should be suitable to scan most WordPress websites at least once per day. When the daily 25 API requests are exhausted, WPScan will continue to work as normal but without any vulnerability data.
+Provide the path to the JSON file with either:
 
-### How many API requests do you need?
+- the `WORDFENCE_CACHE_PATH` environment variable, or
+- the `--wordfence-db PATH` CLI option (takes precedence over the env var).
 
-- Our WordPress scanner makes one API request for the WordPress version, one request per installed plugin, and one request per the installed theme.
-- On average, a WordPress website has 22 installed plugins.
+The file is read once at the start of the scan and used to match the detected WordPress core version, plugins and themes against known vulnerabilities. If the path is not set or the file cannot be read, WPScan aborts with a clear error before scanning.
 
 ## Load CLI options from file/s
 
@@ -192,22 +219,18 @@ cli_options:
   headers: "Custom-Header: aaaa; Another Header: bbb"
 ```
 
-## Save API Token in a file
+## Save the Wordfence DB path in a file
 
-The feature mentioned above is useful to keep the API Token in a config file and not have to supply it via the CLI each time. To do so, create the ~/.config/wpscan/scan.yml file containing the below:
+Instead of passing `--wordfence-db` every time, you can keep the path in a config file (see the locations above). For example, create `~/.config/wpscan/scan.yml` containing:
 
 ```yml
 cli_options:
-  api_token: 'YOUR_API_TOKEN'
+  wordfence_db: '/path/to/wordfence_cache.json'
 ```
 
-## Load API Token From ENV (since v3.7.10)
+## Load the Wordfence DB path from ENV
 
-The API Token will be automatically loaded from the ENV variable `WPSCAN_API_TOKEN` if present. If the `--api-token` CLI option is also provided, the value from the CLI will be used.
-
-## API Service Status
-
-If you experience connection issues with the WPScan API, you can check the service status at https://status.wpscan.com/. When API connection errors occur, WPScan will include a link to the status page in the error message.
+The Wordfence database path is automatically loaded from the `WORDFENCE_CACHE_PATH` environment variable if present. If the `--wordfence-db` CLI option is also provided, the value from the CLI is used.
 
 ## Enumerating usernames
 
