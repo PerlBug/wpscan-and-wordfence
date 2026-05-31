@@ -7,7 +7,7 @@ describe WPScan do
 
   describe '#app_name' do
     it 'returns the overriden string' do
-      expect(WPScan.app_name).to eql 'wpscan'
+      expect(WPScan.app_name).to eql 'wpscan-free'
     end
   end
 
@@ -19,7 +19,7 @@ describe WPScan do
       end
 
       it 'returns the default XDG cache path' do
-        expect(WPScan.user_cache_dir.to_s).to eql '/home/user/.cache/wpscan'
+        expect(WPScan.user_cache_dir.to_s).to eql '/home/user/.cache/wpscan-free'
       end
     end
 
@@ -27,7 +27,7 @@ describe WPScan do
       before { stub_const('ENV', ENV.to_hash.merge('XDG_CACHE_HOME' => '/home/user/cache')) }
 
       it 'returns the XDG cache path' do
-        expect(WPScan.user_cache_dir.to_s).to eql '/home/user/cache/wpscan'
+        expect(WPScan.user_cache_dir.to_s).to eql '/home/user/cache/wpscan-free'
       end
     end
   end

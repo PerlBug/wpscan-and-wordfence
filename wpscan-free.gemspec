@@ -1,7 +1,7 @@
 require_relative 'lib/wpscan/version'
 
 Gem::Specification.new do |s|
-  s.name                  = 'wpscan'
+  s.name                  = 'wpscan-free'
   s.version               = WPScan::VERSION
   s.platform              = Gem::Platform::RUBY
   s.required_ruby_version = '>= 3.3'
@@ -14,7 +14,7 @@ Gem::Specification.new do |s|
 
   s.files                 = Dir.glob('lib/**/*') + Dir.glob('app/**/*') + %w[LICENSE README.md]
   s.test_files            = []
-  s.executables           = ['wpscan']
+  s.executables           = ['wpscan-free']
   s.require_paths         = ['lib']
 
   s.add_dependency 'activesupport',        '>= 7.1', '< 8.2'

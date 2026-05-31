@@ -3,7 +3,7 @@
 <%= info_icon %> Effective URL: <%= @effective_url %>
 <% end -%>
 <%= info_icon %> Started: <%= @start_time.asctime %>
-<%= info_icon %> Command Line: wpscan <%= @command_line %>
+<%= info_icon %> Command Line: wpscan-free <%= @command_line %>
 <%= info_icon %> Hostname: <%= @hostname %>
 <% if WPScan::ParsedCli.exclude_vulns && !WPScan::ParsedCli.exclude_vulns.empty? -%>
 <%= warning_icon %> Excluded vulnerabilities: <%= Array(WPScan::ParsedCli.exclude_vulns).join(', ') %>

@@ -13,5 +13,5 @@ Dockerfile
 **/*.orig
 *.orig
 bin/wpscan-*
-.wpscan/
+.wpscan-free/
 .github/

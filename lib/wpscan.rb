@@ -60,7 +60,7 @@ module WPScan
     # Mainly used in directory paths like the default cookie-jar file and
     # path to load the cli options from files.
     def app_name
-      'wpscan'
+      'wpscan-free'
     end
   end
 

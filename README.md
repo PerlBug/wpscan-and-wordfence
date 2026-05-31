@@ -29,7 +29,7 @@ This is a fork of the open-source [WPScan](https://github.com/wpscanteam/wpscan)
 - ✅ WordPress core, plugin and theme vulnerabilities are matched against the Wordfence database you provide.
 - ✅ Everything else WPScan does (version/plugin/theme/user enumeration, interesting findings, password attacks) is unchanged.
 
-WPScan still uses its own local **detection** database (version fingerprints, dynamic finders, wordlists) to *find* the WordPress version, plugins and themes — that part is kept and refreshed with `wpscan --update`. Wordfence only supplies the *vulnerability* data.
+WPScan still uses its own local **detection** database (version fingerprints, dynamic finders, wordlists) to *find* the WordPress version, plugins and themes — that part is kept and refreshed with `wpscan-free --update`. Wordfence only supplies the *vulnerability* data.
 
 # Quick start
 
@@ -40,10 +40,10 @@ WPScan still uses its own local **detection** database (version fingerprints, dy
 ```shell
 # Option A: environment variable
 export WORDFENCE_CACHE_PATH=~/wordfence_cache.json
-wpscan --url https://target.tld/ --enumerate vp,vt
+wpscan-free --url https://target.tld/ --enumerate vp,vt
 
 # Option B: CLI flag (takes precedence over the env var)
-wpscan --url https://target.tld/ --wordfence-db ~/wordfence_cache.json --enumerate vp,vt
+wpscan-free --url https://target.tld/ --wordfence-db ~/wordfence_cache.json --enumerate vp,vt
 ```
 
 If neither the env var nor the flag is set (or the file cannot be read), WPScan aborts with a clear error before scanning. See [Vulnerability data (Wordfence Intelligence)](#vulnerability-data-wordfence-intelligence) for details.
@@ -52,74 +52,111 @@ If neither the env var nor the flag is set (or the file cannot be read), WPScan 
 
 ## Prerequisites
 
-- (Optional but highly recommended: [rbenv](https://github.com/rbenv/rbenv))
-- Ruby >= 3.3 - Recommended: latest stable
-- Curl >= 7.72 - Recommended: latest stable
-  - The 7.29 has a segfault
-  - The < 7.72 could result in `Stream error in the HTTP/2 framing layer` in some cases
-- RubyGems - Recommended: latest stable
-- Nokogiri might require packages to be installed via your package manager depending on your OS, see https://nokogiri.org/tutorials/installing_nokogiri.html
+- Ruby >= 3.3
+- Bundler (`gem install bundler`)
+- Curl >= 7.72 (recommended)
+- Nokogiri may require system packages — see https://nokogiri.org/tutorials/installing_nokogiri.html
 
-### In a Pentesting distribution
+**macOS**: install Xcode Command Line Tools (`xcode-select --install`).
 
-When using a pentesting distribution (such as Kali Linux), it is recommended to install/update wpscan via the package manager if available.
-
-### In macOSX via Homebrew
-
+**Debian / Ubuntu**:
 ```shell
-brew install wpscanteam/tap/wpscan
+sudo apt install build-essential ruby-dev
 ```
 
-### From RubyGems
-
-WPScan depends on gems with native extensions (e.g. `yajl-ruby`, `nokogiri`, `ffi`), so a working C toolchain and Ruby development headers must be present before `gem install wpscan`. Without them, the install fails with errors like `Failed to build gem native extension` or `make: x86_64-linux-gnu-gcc: No such file or directory` (see [#1844](https://github.com/wpscanteam/wpscan/issues/1844)).
-
-- **Debian / Ubuntu**:
-  ```shell
-  sudo apt install build-essential ruby-dev
-  ```
-- **Fedora / RHEL / CentOS**:
-  ```shell
-  sudo dnf install @development-tools ruby-devel
-  ```
-- **Arch Linux**:
-  ```shell
-  sudo pacman -S base-devel ruby
-  ```
-- **Alpine**:
-  ```shell
-  sudo apk add build-base ruby-dev
-  ```
-- **macOS**: install the Xcode Command Line Tools (`xcode-select --install`).
-
-Then install the gem:
-
+**Fedora / RHEL / CentOS**:
 ```shell
-gem install wpscan
+sudo dnf install @development-tools ruby-devel
 ```
 
-On MacOSX, if a ```Gem::FilePermissionError``` is raised due to Apple's System Integrity Protection (SIP), either install RVM and install wpscan again, or run ```sudo gem install -n /usr/local/bin wpscan``` (see [#1286](https://github.com/wpscanteam/wpscan/issues/1286))
+**Arch Linux**:
+```shell
+sudo pacman -S base-devel ruby
+```
+
+**Alpine**:
+```shell
+sudo apk add build-base ruby-dev
+```
+
+## 1. Clone the repo
+
+```shell
+git clone https://github.com/CERTUNLP/wpscan-and-wordfence.git
+cd wpscan-and-wordfence
+```
+
+## 2. Install dependencies
+
+```shell
+bundle install
+```
+
+## 3. Build and install the gem
+
+```shell
+gem build wpscan-free.gemspec
+gem install wpscan-free-4.0.0.gem
+```
+
+If you get a `Gem::FilePermissionError` on macOS, use:
+```shell
+sudo gem install -n /usr/local/bin wpscan-free-4.0.0.gem
+```
+
+## 4. Add gems binaries to your PATH
+
+RubyGems installs executables to a directory that may not be in your `PATH`. Find it with:
+
+```shell
+gem environment | grep "EXECUTABLE DIRECTORY"
+```
+
+Then add that path to your shell config. For example, with Homebrew Ruby on macOS:
+
+```shell
+echo 'export PATH="/opt/homebrew/lib/ruby/gems/4.0.0/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+## 5. Verify
+
+```shell
+wpscan-free --help
+```
+
+## Alternative: run from source (no gem install)
+
+You can also run directly from the repo without building the gem:
+
+```shell
+bundle exec ruby -Ilib bin/wpscan-free --url https://target.tld/
+```
 
 # Updating
 
-You can update the local **detection** database (version fingerprints, finders and wordlists) by using ```wpscan --update```. This database is only used to *detect* WordPress, plugins and themes; vulnerability data comes from the Wordfence JSON you provide (see [Vulnerability data (Wordfence Intelligence)](#vulnerability-data-wordfence-intelligence)).
+Update the local **detection** database (version fingerprints, finders and wordlists):
 
-Updating WPScan itself is either done via ```gem update wpscan``` or the packages manager (this is quite important for distributions such as in Kali Linux: ```apt-get update && apt-get upgrade```) depending on how WPScan was (pre)installed
+```shell
+wpscan-free --update
+```
+
+This database is only used to *detect* WordPress, plugins and themes; vulnerability data comes from the Wordfence JSON you provide (see [Vulnerability data (Wordfence Intelligence)](#vulnerability-data-wordfence-intelligence)).
 
 # Docker
 
-Pull the repo with ```docker pull wpscanteam/wpscan```
+Pull the repo with ```docker pull wpscanteam/wpscan-free```
 
 Enumerating usernames
 
 ```shell
-docker run -it --rm -v wpscan-db:/wpscan/.cache/wpscan/db wpscanteam/wpscan --url https://target.tld/ --enumerate u
+docker run -it --rm -v wpscan-db:/wpscan/.cache/wpscan-free/db wpscanteam/wpscan-free --url https://target.tld/ --enumerate u
 ```
 
 Enumerating a range of usernames
 
 ```shell
-docker run -it --rm -v wpscan-db:/wpscan/.cache/wpscan/db wpscanteam/wpscan --url https://target.tld/ --enumerate u1-100
+docker run -it --rm -v wpscan-db:/wpscan/.cache/wpscan-free/db wpscanteam/wpscan-free --url https://target.tld/ --enumerate u1-100
 ```
 
 ** replace u1-100 with a range of your choice.
@@ -128,41 +165,56 @@ docker run -it --rm -v wpscan-db:/wpscan/.cache/wpscan/db wpscanteam/wpscan --ur
 
 The image ships with a copy of the local database baked in at build time. Because the example commands above use `--rm`, any database update performed during a run is discarded when the container exits, so the next run starts again from the (potentially stale) baked-in copy.
 
-Mounting a named volume at `/wpscan/.cache/wpscan/db` (the `wpscan` user's cache directory inside the container) keeps the database across runs, so `wpscan --update` only re-downloads files whose checksums actually changed and the 5-day staleness prompt behaves as it would for a local install:
+Mounting a named volume at `/wpscan/.cache/wpscan-free/db` (the `wpscan` user's cache directory inside the container) keeps the database across runs, so `wpscan-free --update` only re-downloads files whose checksums actually changed and the 5-day staleness prompt behaves as it would for a local install:
 
 ```shell
-docker run -it --rm -v wpscan-db:/wpscan/.cache/wpscan/db wpscanteam/wpscan --update
+docker run -it --rm -v wpscan-db:/wpscan/.cache/wpscan-free/db wpscanteam/wpscan-free --update
 ```
 
 The named volume is created automatically on first use if it doesn't already exist.
 
 # Usage
 
+## Full scan example
+
+```shell
+WORDFENCE_CACHE_PATH=/path/to/wordfence_cache.json \
+wpscan-free --url https://example.com/ \
+  --enumerate vp,vt \
+  --plugins-detection passive \
+  --themes-detection passive \
+  --no-banner \
+  --random-user-agent \
+  --format json \
+  --output wpscan-report.json \
+  --follow-redirect
+```
+
 Full user documentation can be found here; https://github.com/wpscanteam/wpscan/wiki/WPScan-User-Documentation
 
-```wpscan --url blog.tld``` This will scan the blog using default options with a good compromise between speed and accuracy. It performs version detection, theme detection, and interesting findings discovery. To enumerate plugins, themes, users, backup folders, etc., use the `-e` option (e.g., `-e ap` for all plugins, `-e vp` for vulnerable plugins, `-e bf` for backup folders).
+```wpscan-free --url blog.tld``` This will scan the blog using default options with a good compromise between speed and accuracy. It performs version detection, theme detection, and interesting findings discovery. To enumerate plugins, themes, users, backup folders, etc., use the `-e` option (e.g., `-e ap` for all plugins, `-e vp` for vulnerable plugins, `-e bf` for backup folders).
 
-If a more stealthy approach is required, then ```wpscan --stealthy --url blog.tld``` can be used.
+If a more stealthy approach is required, then ```wpscan-free --stealthy --url blog.tld``` can be used.
 As a result, when using the ```--enumerate``` option, don't forget to set the ```--plugins-detection``` accordingly, as its default is 'passive'.
 
-For more options, open a terminal and type ```wpscan --help``` (if you built wpscan from the source, you should type the command outside of the git repo)
+For more options, open a terminal and type ```wpscan-free --help```
 
 ## Database Location
 
 The database location follows the [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html):
 
-- **New installations**: `~/.cache/wpscan/db` (or `$XDG_CACHE_HOME/wpscan/db` if set)
-- **Existing installations**: `~/.wpscan/db` (legacy path, maintained for backward compatibility)
+- **New installations**: `~/.cache/wpscan-free/db` (or `$XDG_CACHE_HOME/wpscan-free/db` if set)
+- **Existing installations**: `~/.wpscan-free/db` (legacy path, maintained for backward compatibility)
 
-Runtime files such as the default HTTP cache and cookie jar are stored under `$TMPDIR/wpscan` when
+Runtime files such as the default HTTP cache and cookie jar are stored under `$TMPDIR/wpscan-free` when
 `$TMPDIR` is set. Otherwise they use the same per-user XDG cache directory, for example
-`~/.cache/wpscan/cache` and `~/.cache/wpscan/cookie_jar.txt`. These defaults can be overridden
+`~/.cache/wpscan-free/cache` and `~/.cache/wpscan-free/cookie_jar.txt`. These defaults can be overridden
 with `--cache-dir` and `--cookie-jar`.
 
 To migrate an existing installation to the XDG path:
 
 ```shell
-mv ~/.wpscan ~/.cache/wpscan
+mv ~/.wpscan-free ~/.cache/wpscan-free
 ```
 
 ## Vulnerability data (Wordfence Intelligence)
@@ -180,20 +232,20 @@ The file is read once at the start of the scan and used to match the detected Wo
 
 WPScan can load all options (including the `--url`) from configuration files, the following locations are checked (order: first to last):
 
-- `$XDG_CONFIG_HOME/wpscan/scan.json` (if `XDG_CONFIG_HOME` is set)
-- `$XDG_CONFIG_HOME/wpscan/scan.yml` (if `XDG_CONFIG_HOME` is set)
-- `~/.config/wpscan/scan.json` (if `XDG_CONFIG_HOME` is not set)
-- `~/.config/wpscan/scan.yml` (if `XDG_CONFIG_HOME` is not set)
-- `~/.wpscan/scan.json`
-- `~/.wpscan/scan.yml`
-- `pwd/.wpscan/scan.json`
-- `pwd/.wpscan/scan.yml`
+- `$XDG_CONFIG_HOME/wpscan-free/scan.json` (if `XDG_CONFIG_HOME` is set)
+- `$XDG_CONFIG_HOME/wpscan-free/scan.yml` (if `XDG_CONFIG_HOME` is set)
+- `~/.config/wpscan-free/scan.json` (if `XDG_CONFIG_HOME` is not set)
+- `~/.config/wpscan-free/scan.yml` (if `XDG_CONFIG_HOME` is not set)
+- `~/.wpscan-free/scan.json`
+- `~/.wpscan-free/scan.yml`
+- `pwd/.wpscan-free/scan.json`
+- `pwd/.wpscan-free/scan.yml`
 
 If those files exist, options from the `cli_options` key will be loaded and overridden if found twice.
 
 e.g:
 
-`~/.config/wpscan/scan.yml`:
+`~/.config/wpscan-free/scan.yml`:
 
 ```yml
 cli_options:
@@ -201,7 +253,7 @@ cli_options:
   verbose: true
 ```
 
-`pwd/.wpscan/scan.yml`:
+`pwd/.wpscan-free/scan.yml`:
 
 ```yml
 cli_options:
@@ -209,7 +261,7 @@ cli_options:
   url: 'http://target.tld'
 ```
 
-Running ```wpscan``` in the current directory (pwd) is the same as ```wpscan -v --proxy socks5://127.0.0.1:9090 --url http://target.tld```
+Running ```wpscan-free``` in the current directory (pwd) is the same as ```wpscan-free -v --proxy socks5://127.0.0.1:9090 --url http://target.tld```
 
 Other command line options can be added by using snake case convention. e.g:
 ```yml
@@ -221,7 +273,7 @@ cli_options:
 
 ## Save the Wordfence DB path in a file
 
-Instead of passing `--wordfence-db` every time, you can keep the path in a config file (see the locations above). For example, create `~/.config/wpscan/scan.yml` containing:
+Instead of passing `--wordfence-db` every time, you can keep the path in a config file (see the locations above). For example, create `~/.config/wpscan-free/scan.yml` containing:
 
 ```yml
 cli_options:
@@ -235,13 +287,13 @@ The Wordfence database path is automatically loaded from the `WORDFENCE_CACHE_PA
 ## Enumerating usernames
 
 ```shell
-wpscan --url https://target.tld/ --enumerate u
+wpscan-free --url https://target.tld/ --enumerate u
 ```
 
 Enumerating a range of usernames
 
 ```shell
-wpscan --url https://target.tld/ --enumerate u1-100
+wpscan-free --url https://target.tld/ --enumerate u1-100
 ```
 
 ** replace u1-100 with a range of your choice.
@@ -249,7 +301,7 @@ wpscan --url https://target.tld/ --enumerate u1-100
 ## Enumerating backup folders
 
 ```shell
-wpscan --url https://target.tld/ --enumerate bf
+wpscan-free --url https://target.tld/ --enumerate bf
 ```
 
 This will check for backup folders created by popular WordPress backup plugins. These folders may contain sensitive data like database dumps, configuration files, or full site backups.

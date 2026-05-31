@@ -29,7 +29,7 @@ module WPScan
 
     # @return [ String ]
     def default_user_agent
-      @default_user_agent ||= "WPScan v#{VERSION} (https://wpscan.com/wordpress-security-scanner)"
+      @default_user_agent ||= "WPScan-Free v#{VERSION} (https://wpscan.com/wordpress-security-scanner)"
     end
 
     # @param [ String ] url
